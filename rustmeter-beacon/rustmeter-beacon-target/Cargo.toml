@@ -29,6 +29,7 @@ esp-println = { version = "0.16.1", optional = true}
 
 [features]
 defmt = ["dep:defmt"]
+rustmeter-panic-handler = []
 
 esp32   = ["dep:esp-hal", "esp-hal/esp32",   "esp-sync/esp32", "esp-println/esp32", "rustmeter-beacon-core/multicore" ]
 esp32c2 = ["dep:esp-hal", "esp-hal/esp32c2", "esp-sync/esp32c2", "esp-println/esp32c2"]
