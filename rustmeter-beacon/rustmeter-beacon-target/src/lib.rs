@@ -9,7 +9,6 @@
         feature = "esp32s2",
         feature = "esp32s3"
     ),
-    feature(asm_experimental_arch)
 )]
 
 #[cfg(any(
