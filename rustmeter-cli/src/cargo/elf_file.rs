@@ -38,15 +38,29 @@ impl FirmwareInfo {
     /// The symbol names are shortened by removing any "::POOL" suffix and anything following it, if present.
     pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
         self.elf.with_dependent(|_, file| {
-            file.symbols()
-                .filter_map(|symbol| {
-                    if let Ok(name) = symbol.name() {
-                        Some((symbol.address(), try_extract_short_name(name)))
-                    } else {
-                        None
-                    }
-                })
-                .collect()
+            let mut map = FirmwareAddressMap::new();
+
+            for symbol in file.symbols() {
+                let Ok(name) = symbol.name() else {
+                    continue;
+                };
+
+                let address = symbol.address();
+                let name = try_extract_short_name(name);
+
+                map.entry(address)
+                    .and_modify(|existing| {
+                        // Prefer a descriptive symbol over a linker boundary.
+                        if existing.starts_with("__")
+                            && !name.starts_with("__")
+                        {
+                            *existing = name.clone();
+                        }
+                    })
+                .or_insert(name);
+                }
+
+            map
         })
     }
 
