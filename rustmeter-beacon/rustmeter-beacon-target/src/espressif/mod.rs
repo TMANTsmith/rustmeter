@@ -6,6 +6,8 @@ mod framing;
 mod local_critical_section;
 mod printing;
 mod tracing_esp;
+
+#[cfg(feature = "rustmeter-panic-handler")]
 mod panic_handler;
 
 #[cfg(any(feature = "esp32", feature = "esp32s3", feature = "esp32p4"))]
