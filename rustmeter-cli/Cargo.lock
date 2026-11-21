@@ -3510,7 +3510,7 @@ dependencies = [
 
 [[package]]
 name = "rustmeter"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "arbitrary-int",
@@ -3537,7 +3537,7 @@ dependencies = [
 
 [[package]]
 name = "rustmeter-beacon-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "arbitrary-int",
  "critical-section",

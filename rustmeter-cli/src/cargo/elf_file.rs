@@ -36,33 +36,41 @@ impl FirmwareInfo {
 
     /// Get a mapping of addresses to symbol names for all symbols in the elf file. 
     /// The symbol names are shortened by removing any "::POOL" suffix and anything following it, if present.
-    pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
-        self.elf.with_dependent(|_, file| {
-            let mut map = FirmwareAddressMap::new();
+    
+    
+pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
+    self.elf.with_dependent(|_, file| {
+        let mut map = FirmwareAddressMap::new();
 
-            for symbol in file.symbols() {
-                let Ok(name) = symbol.name() else {
-                    continue;
-                };
+        for symbol in file.symbols() {
+            let Ok(name) = symbol.name() else {
+                continue;
+            };
 
-                let address = symbol.address();
-                let name = try_extract_short_name(name);
+            let address = symbol.address();
+            let kind = symbol.kind();
+            let name = try_extract_short_name(name);
 
-                map.entry(address)
-                    .and_modify(|existing| {
-                        // Prefer a descriptive symbol over a linker boundary.
-                        if existing.starts_with("__")
-                            && !name.starts_with("__")
-                        {
-                            *existing = name.clone();
-                        }
-                    })
+            map.entry(address)
+                .and_modify(|existing| {
+                    // Always prefer a Data symbol over an Unknown symbol.
+                    if kind == object::SymbolKind::Data {
+                        *existing = name.clone();
+                    }
+                })
                 .or_insert(name);
-                }
+        }
 
-            map
-        })
-    }
+        eprintln!(
+            "Selected RustMeter symbol at 0x20000358: {:?}",
+            map.get(&0x20000358)
+        );
+
+        map
+    })
+}
+
+
 
     /// Try to get the symbol name for the given address.
     /// Returns None if no symbol with the given address is found or if the symbol name cannot be parsed as utf-8 string
@@ -163,6 +171,14 @@ impl FirmwareInfo {
 
 /// Helper function to extract short name from full symbol name
 fn try_extract_short_name(full_name: &str) -> String {
-    let pool_index = full_name.find("::POOL").unwrap_or(full_name.len());
-    full_name[0..pool_index].to_string()
+    let without_pool = full_name
+        .split("::POOL")
+        .next()
+        .unwrap_or(full_name);
+
+    without_pool
+        .rsplit("::")
+        .next()
+        .unwrap_or(without_pool)
+        .to_string()
 }
