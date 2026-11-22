@@ -96,11 +96,6 @@ pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
             // PRINTLN ---
         }
 
-        eprintln!(
-            "Selected RustMeter symbol at 0x20000358: {:?}",
-            map.get(&0x20000358)
-        );
-
         map
     })
 }
