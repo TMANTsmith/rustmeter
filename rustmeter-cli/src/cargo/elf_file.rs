@@ -171,14 +171,6 @@ pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
 
 /// Helper function to extract short name from full symbol name
 fn try_extract_short_name(full_name: &str) -> String {
-    let without_pool = full_name
-        .split("::POOL")
-        .next()
-        .unwrap_or(full_name);
-
-    without_pool
-        .rsplit("::")
-        .next()
-        .unwrap_or(without_pool)
-        .to_string()
+    let pool_index = full_name.find("::POOL").unwrap_or(full_name.len());
+    full_name[0..pool_index].to_string()
 }
