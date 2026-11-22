@@ -36,69 +36,74 @@ impl FirmwareInfo {
 
     /// Get a mapping of addresses to symbol names for all symbols in the elf file. 
     /// The symbol names are shortened by removing any "::POOL" suffix and anything following it, if present.
-    
-    
-pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
-    self.elf.with_dependent(|_, file| {
-        let mut map = FirmwareAddressMap::new();
-
-        for symbol in file.symbols() {
-            let Ok(name) = symbol.name() else {
-                continue;
-            };
 
 
-            let address = symbol.address();
-            let kind = symbol.kind();
-            let name = try_extract_short_name(name);
+    pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
+        self.elf.with_dependent(|_, file| {
+            let mut map = FirmwareAddressMap::new();
+            let mut total_symbols = 0usize;
+            let mut matched_symbols = 0usize;
 
-            // PRINTLN ___
-            let raw_name = name;
-            let short_name = try_extract_short_name(&raw_name);
+            for symbol in file.symbols() {
+                total_symbols += 1;
 
-            let is_interesting = raw_name.contains("rustmeter")
-                || raw_name.contains("beacon")
-                || raw_name.contains("TRACE")
-                || raw_name.contains("POOL")
-                || short_name.contains("rustmeter")
-                || short_name.contains("beacon")
-                || short_name.contains("TRACE");
-
-            if is_interesting {
-                eprintln!(
-                    "[sym] addr={:#010x} kind={:?} short={:?} raw={:?} exists={}",
-                    address,
-                    kind,
-                    short_name,
-                    raw_name,
-                    map.contains_key(&address)
-                );
-            }
-            // ___
-
-            map.entry(address)
-                .and_modify(|existing| {
-                    // Always prefer a Data symbol over an Unknown symbol.
-                    if kind == object::SymbolKind::Data {
-                        *existing = name.clone();
+                let raw_name = match symbol.name() {
+                    Ok(n) => n,
+                    Err(e) => {
+                        eprintln!(
+                            "[sym] failed to read name at {:#010x}: {:?}",
+                            symbol.address(),
+                            e
+                        );
+                        continue;
                     }
-                })
-                .or_insert(name);
-            // PRINTLN ---
-            if is_interesting {
-                if let Some(current) = map.get(&address) {
+                };
+
+                let address = symbol.address();
+                let kind = symbol.kind();
+                let short_name = try_extract_short_name(raw_name);
+
+                let is_interesting = raw_name.contains("rustmeter")
+                    || raw_name.contains("beacon")
+                    || raw_name.contains("TRACE")
+                    || raw_name.contains("POOL");
+
+                if is_interesting {
+                    matched_symbols += 1;
                     eprintln!(
-                        "[map] addr={:#010x} -> stored={:?}",
-                        address, current
+                        "[sym] addr={:#010x} kind={:?} exists={} short={:?} raw={:?}",
+                        address,
+                        kind,
+                        map.contains_key(&address),
+                        short_name,
+                        raw_name
                     );
                 }
-            }
-            // PRINTLN ---
-        }
 
-        map
-    })
-}
+                map.entry(address)
+                    .and_modify(|existing| {
+                        // Always prefer a Data symbol over an Unknown symbol.
+                        if kind == object::SymbolKind::Data {
+                            if is_interesting {
+                                eprintln!(
+                                    "[map] overwriting {:#010x}: {:?} -> {:?}",
+                                    address, existing, short_name
+                                );
+                            }
+                            *existing = short_name.clone();
+                        }
+                    })
+                .or_insert(short_name);
+                }
+
+            eprintln!(
+                "[sym] summary: total={} matched_rustmeter_trace={}",
+                total_symbols, matched_symbols
+            );
+
+            map
+        })
+    }
 
 
 
