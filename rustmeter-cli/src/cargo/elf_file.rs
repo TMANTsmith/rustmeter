@@ -47,9 +47,34 @@ pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
                 continue;
             };
 
+
             let address = symbol.address();
             let kind = symbol.kind();
             let name = try_extract_short_name(name);
+
+            // PRINTLN ___
+            let raw_name = name;
+            let short_name = try_extract_short_name(&raw_name);
+
+            let is_interesting = raw_name.contains("rustmeter")
+                || raw_name.contains("beacon")
+                || raw_name.contains("TRACE")
+                || raw_name.contains("POOL")
+                || short_name.contains("rustmeter")
+                || short_name.contains("beacon")
+                || short_name.contains("TRACE");
+
+            if is_interesting {
+                eprintln!(
+                    "[sym] addr={:#010x} kind={:?} short={:?} raw={:?} exists={}",
+                    address,
+                    kind,
+                    short_name,
+                    raw_name,
+                    map.contains_key(&address)
+                );
+            }
+            // ___
 
             map.entry(address)
                 .and_modify(|existing| {
@@ -59,6 +84,16 @@ pub fn addr_symbol_map(&self) -> FirmwareAddressMap {
                     }
                 })
                 .or_insert(name);
+            // PRINTLN ---
+            if is_interesting {
+                if let Some(current) = map.get(&address) {
+                    eprintln!(
+                        "[map] addr={:#010x} -> stored={:?}",
+                        address, current
+                    );
+                }
+            }
+            // PRINTLN ---
         }
 
         eprintln!(
