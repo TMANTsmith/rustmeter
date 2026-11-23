@@ -190,6 +190,7 @@ pub async fn connector(mut out_route: PrinterRoute, cpu_freq: Rate) {
 }
 
 pub fn send_global_clock_configuration(system_frequency_hz: u32) {
+    defmt::warn!("RustMeter connector: sending global clock configuration");
     rustmeter_beacon_core::tracing::write_tracing_event(EventPayload::TypeDefinition(
         TypeDefinitionPayload::GlobalClockConfiguration {
             system_frequency_hz,
