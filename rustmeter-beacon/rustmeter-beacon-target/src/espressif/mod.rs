@@ -53,15 +53,16 @@ pub fn init_rustmeter_beacon<P: ConfigPrinterBuild>(
     config: RustmeterConfig<P>,
     spawner: &embassy_executor::Spawner,
 ) -> Result<(), InitializationError> {
-    // Build Printer
     let printer_route = config
         .build_printer_route()
         .map_err(InitializationError::UartConfigError)?;
 
-    // Spawn printing task
     let token = printing::connector(printer_route, config.cpu_freq)
         .map_err(InitializationError::TaskSpawnError)?;
-    spawner.spawn(token);
+
+    spawner
+        .spawn(token)
+        .map_err(InitializationError::TaskSpawnError)?;
 
     Ok(())
 }
