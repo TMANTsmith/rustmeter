@@ -59,7 +59,7 @@ pub fn init_rustmeter_beacon<P: ConfigPrinterBuild>(
 
     let token = printing::connector(printer_route, config.cpu_freq);
 
-    spawner.spawn(token);
+    spawner.spawn(token).map_err(InitializationError::TaskSpawnError)?;
 
     Ok(())
 }
