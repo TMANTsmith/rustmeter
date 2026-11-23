@@ -81,7 +81,13 @@ fn write_tracing_data(data: &[u8]) {
             }
         }
 
-        NEW_DATA_SIGNAL.signal(()); // signal because we added data
+        if let Some(_) = buf.push_slice_fast(data) {
+            NEW_DATA_SIGNAL.signal(());
+        } else {
+            unsafe {
+                DROPPED_EVENTS_COUNTER[idx] += 1;
+            }
+        }
 
     // do not send actual data this round because we took TimeDelta::now() and it would be inconsistent
     } else {
