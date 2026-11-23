@@ -121,12 +121,16 @@ pub async fn connector(mut out_route: PrinterRoute, cpu_freq: Rate) {
 
                 // send any data if available
                 if datalen > 0 {
-                    // write frame
-                    let _ = out_route.write_all(&buffer[0..framelen]).await;
-                    inbuf.drain(datalen);
-
-                    // Update sequence ID
-                    seq_id[core_id] = (seq_id[core_id] + 1) % 128;
+                    match out_route.write_all(&buffer[..framelen]).await {
+                        Ok(()) => {
+                            inbuf.drain(datalen);
+                            seq_id[core_id] = (seq_id[core_id] + 1) % 128;
+                        }
+                        Err(()) => {
+                            // Keep the data in the buffer so it can be retried.
+                            Timer::after(Duration::from_millis(10)).await;
+                        }
+                    }
                 }
 
                 // Stop if only a few bytes are left for next round to allow other core-data to be sent
